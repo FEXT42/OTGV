@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .result table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .result th, .result td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Fee Calculator</h2>
+
+    <div>
+        <h3>Fee Details:</h3>
+        <ul>
+            <li><strong>Transcript:</strong> Rs 7,300</li>
+            <li><strong>Genuineness Verification:</strong> Rs 1,830 per sheet</li>
+            <li><strong>Search Fees:</strong>
+                <ul>
+                    <li>Rs 255 if difference is less than 3 years</li>
+                    <li>Rs 495 if difference is between 3 and less than 10 years</li>
+                    <li>Rs 920 if difference is 10 years or more</li>
+                </ul>
+            </li>
+            <li><strong>Personal Copy Required:</strong> Rs 50 (optional)</li>
+        </ul>
+    </div>
+
+    <div>
+        <h4>Select Service:</h4>
+        <input type="radio" id="genuineness" name="service" value="genuineness" onchange="toggleGenuineness()" checked>
+        <label for="genuineness">Genuineness Verification</label><br>
+        <input type="radio" id="transcript" name="service" value="transcript" onchange="toggleGenuineness()">
+        <label for="transcript">Transcript</label><br><br>
+    </div>
+
+    <div id="genuinenessQuantityDiv">
+        <label for="genuinenessQuantity">Number of Genuineness Sheets:</label>
+        <input type="number" id="genuinenessQuantity" name="genuinenessQuantity" min="1" value="1"><br><br>
+    </div>
+
+    <div>
+        <label for="degreeDate">Enter Date of Degree (YYYY-MM-DD):</label>
+        <input type="date" id="degreeDate" name="degreeDate"><br><br>
+    </div>
+
+    <div>
+        <h4>Additional Services:</h4>
+        <input type="checkbox" id="personalCopy" name="personalCopy" value="50">
+        <label for="personalCopy">Personal Copy Required - Rs 50</label><br>
+        <input type="checkbox" id="emailCharges" name="emailCharges" value="100">
+        <label for="emailCharges">Email - Rs 100</label><br>
+    </div>
+
+    <div>
+        <label for="country">Select Country for Postal Charges:</label>
+        <select id="country" name="country" onchange="updatePostalCharges()">
+            <option value="India">India - Rs 50</option>
+            <option value="Canada">Canada - Rs 1392</option>
+            <option value="USA">USA - Rs 1829</option>
+            <option value="NewZealand">New Zealand - Rs 1168</option>
+            <option value="other">Other</option>
+        </select>
+        <input type="number" id="customPostalCharges" name="customPostalCharges" style="display: none;" placeholder="Enter Postal Charges">
+        <br><br>
+    </div>
+
+    <button onclick="calculateTotal()">Calculate Total</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+    let postalChargesData = {
+        'India': 50,
+        'Canada': 1392,
+        'USA': 1829,
+        'NewZealand': 1168
+    };
+
+    function toggleGenuineness() {
+        const genuinenessQuantityDiv = document.getElementById('genuinenessQuantityDiv');
+        const genuinenessRadio = document.getElementById('genuineness');
+        genuinenessQuantityDiv.style.display = genuinenessRadio.checked ? 'block' : 'none';
+    }
+
+    function calculateDateDifference(startDate, endDate) {
+        let start = new Date(startDate);
+        let end = new Date(endDate);
+
+        let years = end.getFullYear() - start.getFullYear();
+        let months = end.getMonth() - start.getMonth();
+        let days = end.getDate() - start.getDate();
+
+        if (days < 0) {
+            months--;
+            days += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+        }
+
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+
+        return {years: years, months: months, days: days};
+    }
+
+    function updatePostalCharges() {
+        const countrySelect = document.getElementById('country');
+        const customPostalChargesInput = document.getElementById('customPostalCharges');
+
+        if (countrySelect.value === 'other') {
+            customPostalChargesInput.style.display = 'inline-block';
+        } else {
+            customPostalChargesInput.style.display = 'none';
+        }
+    }
+
+    function calculateTotal() {
+        const resultDiv = document.getElementById('result');
+        let total = 0;
+        let items = [];
+        let serial = 1;
+
+        const service = document.querySelector('input[name="service"]:checked').value;
+        const genuinenessQuantity = parseInt(document.getElementById('genuinenessQuantity').value);
+        const degreeDate = document.getElementById('degreeDate').value;
+        const currentDate = new Date();
+        const dateDiff = calculateDateDifference(degreeDate, currentDate);
+
+        if (service === 'genuineness') {
+            total += genuinenessQuantity * 1830;
+            items.push({serial: serial++, description: `Genuineness Verification (${genuinenessQuantity} sheets)`, cost: genuinenessQuantity * 1830});
+        } else if (service === 'transcript') {
+            total += 7300;
+            items.push({serial: serial++, description: 'Transcript', cost: 7300});
+        }
+
+        let searchFee = 0;
+        const yearDifference = dateDiff.years;
+        if (yearDifference < 3) {
+            searchFee = 255;
+        } else if (yearDifference >= 3 && yearDifference < 10) {
+            searchFee = 495;
+        } else {
+            searchFee = 920;
+        }
+        total += searchFee;
+        items.push({serial: serial++, description: 'Search Fee', cost: searchFee});
+
+        const personalCopyFee = document.getElementById('personalCopy').checked ? 50 : 0;
+        if (personalCopyFee > 0) {
+            total += personalCopyFee;
+            items.push({serial: serial++, description: 'Personal Copy Required', cost: personalCopyFee});
+        }
+
+        let postalCharges = 0;
+        const selectedCountry = document.getElementById('country').value;
+        if (selectedCountry !== 'other') {
+            postalCharges = postalChargesData[selectedCountry];
+        } else {
+            postalCharges = parseFloat(document.getElementById('customPostalCharges').value) || 0;
+        }
+        
+        if (postalCharges > 0) {
+            total += postalCharges;
+            items.push({serial: serial++, description: `Postal Charges (${selectedCountry}): Rs ${postalCharges.toFixed(2)}`, cost: postalCharges});
+        }
+
+        const emailCharges = document.getElementById('emailCharges').checked ? 100 : 0;
+        if (emailCharges > 0) {
+            total += emailCharges;
+            items.push({serial: serial++, description: 'Email Charges', cost: emailCharges});
+        }
+
+        // Generate result in table format
+        let tableHtml = '<h4>Summary:</h4><table>';
+        tableHtml += '<tr><th>Serial</th><th>Description</th><th>Cost (Rs)</th></tr>';
+        items.forEach(item => {
+            tableHtml += `<tr><td>${item.serial}</td><td>${item.description}</td><td>${item.cost.toFixed(2)}</td></tr>`;
+        });
+        tableHtml += `<tr><td colspan="2"><strong>Total</strong></td><td><strong>${total.toFixed(2)}</strong></td></tr>`;
+        tableHtml += '</table>';
+
+        resultDiv.innerHTML = tableHtml;
+        resultDiv.innerHTML += `<h4>Difference between given date and current date: ${dateDiff.years} years, ${dateDiff.months} months, and ${dateDiff.days} days</h4>`;
+    }
+</script>
+
+</body>
+</html>
